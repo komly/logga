@@ -11,6 +11,7 @@ import (
 type Level int
 type Logger interface {
 	Debugf(string, ...interface{})
+	Infof(string, ...interface{})
 	Warningf(string, ...interface{})
 	Errorf(string, ...interface{})
 	Fatalf(string, ...interface{})
@@ -45,6 +46,7 @@ func (f textFormatter) Format(message interface{}, out io.Writer) {
 const (
 	All Level = iota
 	Debug
+	Info
 	Warning
 	Error
 	Fatal
@@ -84,6 +86,10 @@ func NewLogger(opts ...Option) Logger {
 
 func (l logger) Debugf(format string, args ...interface{}) {
 	l.printf(Debug, format, args...)
+}
+
+func (l logger) Infof(format string, args ...interface{}) {
+	l.printf(Info, format, args...)
 }
 
 func (l logger) Warningf(format string, args ...interface{}) {
