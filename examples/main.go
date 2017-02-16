@@ -2,12 +2,14 @@ package main
 
 import (
 	"github.com/Komly/logga"
+	"os"
 )
 
 func main() {
 	logga := logga.NewLogger(
 		logga.WithLevel(logga.Error),
 		logga.WithMessageTemplate("{{.Level}} - {{.Time}} -  {{.Message}}\n"),
+		logga.WithOutput(os.Stdout),
 	)
 
 	logga.Debugf("Debug message: %d", 1)

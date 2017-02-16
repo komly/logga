@@ -22,6 +22,7 @@ type logger struct {
 	level      Level
 	formatter  Formatter
 	timeFormat string
+	out        io.Writer
 }
 
 type Formatter interface {
@@ -74,8 +75,16 @@ func WithMessageTemplate(tmplText string) Option {
 	}
 }
 
+func WithOutput(out io.Writer) Option {
+	return func(l Logger) error {
+		l.(*logger).out = out
+		return nil
+	}
+}
+
 func NewLogger(opts ...Option) Logger {
 	l := &logger{}
+	l.out = os.Stderr
 	l.timeFormat = time.RFC3339
 	l.formatter = newTextFormatter("{{.Level}} - {{.Time}} - {{.Message}}\n")
 	for _, opt := range opts {
@@ -115,6 +124,6 @@ func (l logger) printf(level Level, format string, args ...interface{}) {
 			Message: message,
 			Time:    time.Now().Format(l.timeFormat),
 			Level:   levelDescription[level],
-		}, os.Stderr)
+		}, l.out)
 	}
 }
