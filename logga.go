@@ -1,9 +1,11 @@
 package logga
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"text/template"
 	"time"
 )
@@ -15,18 +17,26 @@ type Logger interface {
 	Warningf(string, ...interface{})
 	Errorf(string, ...interface{})
 	Fatalf(string, ...interface{})
+	SetOption(Option)
 }
 type Option func(Logger) error
+
+type LogRecord struct {
+	Message string `json:"message"`
+	Time    string `json:"time"`
+	Level   string `json:"level"`
+}
 
 type logger struct {
 	level      Level
 	formatter  Formatter
 	timeFormat string
 	out        io.Writer
+	mutex      sync.Mutex
 }
 
 type Formatter interface {
-	Format(message interface{}, out io.Writer)
+	Format(message *LogRecord, out io.Writer)
 }
 
 type textFormatter struct {
@@ -40,8 +50,16 @@ func newTextFormatter(tmplText string) *textFormatter {
 	}
 }
 
-func (f textFormatter) Format(message interface{}, out io.Writer) {
+func (f textFormatter) Format(message *LogRecord, out io.Writer) {
 	f.template.Execute(out, message)
+}
+
+type JSONFormatter struct {
+}
+
+func (j JSONFormatter) Format(message *LogRecord, out io.Writer) {
+	encoder := json.NewEncoder(out)
+	encoder.Encode(message)
 }
 
 const (
@@ -56,7 +74,7 @@ const (
 
 var levelDescription = map[Level]string{
 	Debug:   "DEBUG",
-	Warning: "WARN ",
+	Warning: "WARNING",
 	Error:   "ERROR",
 	Fatal:   "FATAL",
 }
@@ -71,6 +89,13 @@ func WithLevel(level Level) Option {
 func WithMessageTemplate(tmplText string) Option {
 	return func(l Logger) error {
 		l.(*logger).formatter = newTextFormatter(tmplText)
+		return nil
+	}
+}
+
+func WithFormatter(fmt Formatter) Option {
+	return func(l Logger) error {
+		l.(*logger).formatter = fmt
 		return nil
 	}
 }
@@ -93,6 +118,12 @@ func NewLogger(opts ...Option) Logger {
 	return l
 }
 
+func (l *logger) SetOption(opt Option) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	opt(l)
+}
+
 func (l logger) Debugf(format string, args ...interface{}) {
 	l.printf(Debug, format, args...)
 }
@@ -111,16 +142,13 @@ func (l logger) Errorf(format string, args ...interface{}) {
 
 func (l logger) Fatalf(format string, args ...interface{}) {
 	l.printf(Fatal, format, args...)
+	os.Exit(1)
 }
 
 func (l logger) printf(level Level, format string, args ...interface{}) {
 	if level >= l.level {
 		message := fmt.Sprintf(format, args...)
-		l.formatter.Format(struct {
-			Message string
-			Time    string
-			Level   string
-		}{
+		l.formatter.Format(&LogRecord{
 			Message: message,
 			Time:    time.Now().Format(l.timeFormat),
 			Level:   levelDescription[level],
