@@ -1,12 +1,13 @@
-# Logga - simple, "convention over configuration" logger for golang
+Logga - simple, "convention over configuration" logger for golang
+=================
 
-## Installation
+# Installation
 
 ```sh
 go get "github.com/Komly/logga"
 ```
 
-## Usage
+# Usage
 ```go
 logga := logga.NewLogger(
     logga.WithLevel(logga.Error),
