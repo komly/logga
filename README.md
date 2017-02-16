@@ -2,7 +2,9 @@
 
 ## Installation
 
-`go get "github.com/Komly/logga"`
+```sh
+go get "github.com/Komly/logga"
+```
 
 # Usage
 ```go
