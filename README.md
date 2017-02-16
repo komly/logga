@@ -6,7 +6,7 @@
 go get "github.com/Komly/logga"
 ```
 
-# Usage
+## Usage
 ```go
 logga := logga.NewLogger(
     logga.WithLevel(logga.Error),
